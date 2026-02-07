@@ -68,7 +68,11 @@ if submitted:
         "payment_method": payment_method.lower(),
         "region": clean_text(region).title(),
     }
-
+    # ship_date validation
+    if ship_date is not None and ship_date < order_date:
+        st.error("❌ Ship date cannot be earlier than Order date.")
+        st.stop()
+        
     # validation
     errors = []
     if not data["customer_id"]:
