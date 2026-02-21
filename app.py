@@ -90,9 +90,47 @@ if submitted:
 st.divider()
 st.subheader("📄 Latest Orders")
 
-rows = fetch_latest(50)
-if rows:
-    df = pd.DataFrame(rows)
+try:
+    rows = fetch_latest(200)
+
+    if not rows:
+        st.info("No orders yet. Submit the form above.")
+    else:
+        df = pd.DataFrame(rows)
+
+        # ---- Chart ABOVE the latest orders table ----
+        # Group the latest orders by day (count + revenue).
+        # Works whether order_date arrives as date or string.
+        if "order_date" in df.columns and "total_amount" in df.columns:
+            _tmp = df.copy()
+            _tmp["order_date"] = pd.to_datetime(_tmp["order_date"], errors="coerce")
+            daily = (
+                _tmp.dropna(subset=["order_date"])
+                    .groupby(_tmp["order_date"].dt.date)
+                    .agg(
+                        orders=("order_id", "count") if "order_id" in _tmp.columns else ("total_amount", "count"),
+                        revenue=("total_amount", "sum"),
+                    )
+                    .reset_index()
+                    .rename(columns={"order_date": "date"})
+            )
+            daily["date"] = pd.to_datetime(daily["date"])
+            daily = daily.sort_values("date")
+
+            ch1, ch2 = st.columns(2)
+            with ch1:
+                st.caption("Revenue by day (from latest 200 orders)")
+                st.line_chart(daily.set_index("date")["revenue"])
+            with ch2:
+                st.caption("Orders by day (from latest 200 orders)")
+                st.bar_chart(daily.set_index("date")["orders"])
+
+        # Latest orders table (kept below the chart)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+
+except Exception as e:
+    st.error("Could not fetch rows from the database.")
+    st.code(str(e))
     st.dataframe(df, use_container_width=True)
 else:
     st.info("No orders yet.")
