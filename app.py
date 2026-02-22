@@ -101,15 +101,15 @@ try:
         # ---- Chart ABOVE the latest orders table ----
         # Group the latest orders by day (count + revenue).
         # Works whether order_date arrives as date or string.
-        if "order_date" in df.columns and "total_amount" in df.columns:
+        if "order_date" in df.columns and "total_amount_usd" in df.columns:
             _tmp = df.copy()
             _tmp["order_date"] = pd.to_datetime(_tmp["order_date"], errors="coerce")
             daily = (
                 _tmp.dropna(subset=["order_date"])
                     .groupby(_tmp["order_date"].dt.date)
                     .agg(
-                        orders=("order_id", "count") if "order_id" in _tmp.columns else ("total_amount", "count"),
-                        revenue=("total_amount", "sum"),
+                        orders=("order_id", "count") if "order_id" in _tmp.columns else ("total_amount_usd", "count"),
+                        revenue=("total_amount_usd", "sum"),
                     )
                     .reset_index()
                     .rename(columns={"order_date": "date"})
